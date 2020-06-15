@@ -73,6 +73,10 @@ using namespace Trace;
 
 namespace {
 
+  // Minimum and maximum evaluation grain size
+  constexpr int MinGrain = 8;
+  constexpr int MaxGrain = 32;
+
   // Threshold for lazy and space evaluation
   constexpr Value LazyThreshold  = Value(1400);
   constexpr Value SpaceThreshold = Value(12222);
@@ -856,7 +860,11 @@ namespace {
     }
 
     // Evaluation grain
-    v = (v / 16) * 16;
+    int grain = MaxGrain * int(me->game_phase())
+              + MinGrain * int(PHASE_MIDGAME - me->game_phase());
+    grain /= PHASE_MIDGAME;
+
+    v = (v / grain) * grain;
 
     // Side to move point of view
     v = (pos.side_to_move() == WHITE ? v : -v) + Tempo;
