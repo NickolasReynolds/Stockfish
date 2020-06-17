@@ -75,7 +75,7 @@ namespace {
 
   // Minimum and maximum evaluation grain size
   constexpr int MinGrain = 8;
-  constexpr int MaxGrain = 32;
+  constexpr int MaxGrain = 16;
 
   // Threshold for lazy and space evaluation
   constexpr Value LazyThreshold  = Value(1400);
