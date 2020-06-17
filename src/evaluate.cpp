@@ -856,7 +856,7 @@ namespace {
     }
 
     // Evaluation grain
-    int grain = std::max(16, pos.rule50_count());
+    int grain = (pos.rule50_count() > 25 ? 32 : 16);
     v = (v / grain) * grain;
 
     // Side to move point of view
