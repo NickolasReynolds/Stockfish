@@ -856,7 +856,8 @@ namespace {
     }
 
     // Evaluation grain
-    v = (v / 16) * 16;
+    int grain = 8 << ((pos.key() + pos.this_thread()->nodes) & 3);
+    v = (v / grain) * grain;
 
     // Side to move point of view
     v = (pos.side_to_move() == WHITE ? v : -v) + Tempo;
