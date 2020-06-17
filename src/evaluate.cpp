@@ -74,8 +74,8 @@ using namespace Trace;
 namespace {
 
   // Minimum and maximum evaluation grain size
-  constexpr int MinGrain = 8;
-  constexpr int MaxGrain = 16;
+  constexpr int MinGrain = 16;
+  constexpr int MaxGrain = 32;
 
   // Threshold for lazy and space evaluation
   constexpr Value LazyThreshold  = Value(1400);
