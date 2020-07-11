@@ -179,6 +179,7 @@ namespace {
     template<Color Us> Score threats() const;
     template<Color Us> Score passed() const;
     template<Color Us> Score space() const;
+    template<Color Us> Score contested_space() const;
     Value winnable(Score score) const;
 
     const Position& pos;
@@ -191,6 +192,7 @@ namespace {
     // attacked by a given color and piece type. Special "piece types" which
     // is also calculated is ALL_PIECES.
     Bitboard attackedBy[COLOR_NB][PIECE_TYPE_NB];
+    Bitboard pseudoAttackedBy[COLOR_NB][PIECE_TYPE_NB];
 
     // attackedBy2[color] are the squares attacked by at least 2 units of a given
     // color, including x-rays. But diagonal x-rays through pawns are not computed.
@@ -247,6 +249,10 @@ namespace {
     attackedBy[Us][ALL_PIECES] = attackedBy[Us][KING] | attackedBy[Us][PAWN];
     attackedBy2[Us] = dblAttackByPawn | (attackedBy[Us][KING] & attackedBy[Us][PAWN]);
 
+    pseudoAttackedBy[Us][KING] = attackedBy[Us][KING];
+    pseudoAttackedBy[Us][PAWN] = attackedBy[Us][PAWN];
+    pseudoAttackedBy[Us][ALL_PIECES] = attackedBy[Us][ALL_PIECES];
+
     // Init our king safety tables
     Square s = make_square(Utility::clamp(file_of(ksq), FILE_B, FILE_G),
                            Utility::clamp(rank_of(ksq), RANK_2, RANK_7));
@@ -275,6 +281,7 @@ namespace {
     Score score = SCORE_ZERO;
 
     attackedBy[Us][Pt] = 0;
+    pseudoAttackedBy[Us][Pt] = 0;
 
     for (Square s = *pl; s != SQ_NONE; s = *++pl)
     {
@@ -289,6 +296,9 @@ namespace {
         attackedBy2[Us] |= attackedBy[Us][ALL_PIECES] & b;
         attackedBy[Us][Pt] |= b;
         attackedBy[Us][ALL_PIECES] |= b;
+
+        pseudoAttackedBy[Us][Pt] |= attacks_bb<Pt>(s);
+        pseudoAttackedBy[Us][ALL_PIECES] |= pseudoAttackedBy[Us][Pt];
 
         if (b & kingRing[Them])
         {
@@ -306,6 +316,8 @@ namespace {
         int mob = popcount(b & mobilityArea[Us]);
 
         mobility[Us] += MobilityBonus[Pt - 2][mob];
+
+        
 
         if (Pt == BISHOP || Pt == KNIGHT)
         {
@@ -725,6 +737,21 @@ namespace {
     return score;
   }
 
+  template<Tracing T> template<Color Us>
+  Score Evaluation<T>::contested_space() const {
+
+    constexpr Color Them = ~Us;
+
+    Bitboard contested = pseudoAttackedBy[Us][ALL_PIECES]
+                       & pseudoAttackedBy[Them][ALL_PIECES]
+                       & mobilityArea[Us];
+    int bonus = 2 * popcount(contested & attackedBy[Us][ALL_PIECES]);
+
+    Score score = make_score(bonus, 0);
+
+    return score;
+  }
+
 
   // Evaluation::winnable() adjusts the midgame and endgame score components, based on
   // the known attacking/defending status of the players. The final value is derived
@@ -858,7 +885,8 @@ namespace {
     score +=  king<   WHITE>() - king<   BLACK>()
             + threats<WHITE>() - threats<BLACK>()
             + passed< WHITE>() - passed< BLACK>()
-            + space<  WHITE>() - space<  BLACK>();
+            + space<  WHITE>() - space<  BLACK>()
+            + contested_space<WHITE>() - contested_space<BLACK>();
 
     // Derive single value from mg and eg parts of score
     v = winnable(score);
