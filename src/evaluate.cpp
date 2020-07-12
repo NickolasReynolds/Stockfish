@@ -737,7 +737,7 @@ namespace {
   template<Tracing T> template<Color Us>
   Score Evaluation<T>::contested_space() const {
 
-    if (pos.non_pawn_material() < SpaceThreshold || pe->blocked_count < 4)
+    if (pos.non_pawn_material() < SpaceThreshold || pe->blocked_count() < 4)
         return SCORE_ZERO;
 
     constexpr Color Them = ~Us;
