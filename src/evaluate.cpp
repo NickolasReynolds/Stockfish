@@ -249,8 +249,6 @@ namespace {
     attackedBy[Us][ALL_PIECES] = attackedBy[Us][KING] | attackedBy[Us][PAWN];
     attackedBy2[Us] = dblAttackByPawn | (attackedBy[Us][KING] & attackedBy[Us][PAWN]);
 
-    pseudoAttackedBy[Us][ALL_PIECES] = attackedBy[Us][ALL_PIECES];
-
     // Init our king safety tables
     Square s = make_square(Utility::clamp(file_of(ksq), FILE_B, FILE_G),
                            Utility::clamp(rank_of(ksq), RANK_2, RANK_7));
@@ -737,15 +735,22 @@ namespace {
   template<Tracing T> template<Color Us>
   Score Evaluation<T>::contested_space() const {
 
-    if (pos.non_pawn_material() < SpaceThreshold || pe->blocked_count() < 4)
+    if (pos.non_pawn_material() < SpaceThreshold || pe->blocked_count() < 5)
         return SCORE_ZERO;
 
     constexpr Color Them = ~Us;
 
+    // Doesn't include KING or PAWN pseudo attacks at the moment.
     Bitboard contested = pseudoAttackedBy[  Us][ALL_PIECES]
-                       & pseudoAttackedBy[Them][ALL_PIECES];
+                       & pseudoAttackedBy[Them][ALL_PIECES]
+                       & mobilityArea[Us];
+    
+    Bitboard our_piece_attacks = attackedBy[Us][KNIGHT]
+                               & attackedBy[Us][BISHOP]
+                               & attackedBy[Us][ROOK]
+                               & attackedBy[Us][QUEEN];
 
-    int bonus = 2 * popcount(contested & attackedBy[Us][ALL_PIECES]);
+    int bonus = (pe->blocked_count() - 3) * popcount(contested & our_piece_attacks) / 2;
 
     Score score = make_score(bonus, 0);
 
